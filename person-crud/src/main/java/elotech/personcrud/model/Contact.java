@@ -1,6 +1,7 @@
 package elotech.personcrud.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,9 +13,12 @@ import lombok.Setter;
 public class Contact {
     @Id
     @Column(name = "id")
-    @SequenceGenerator(name = "PersonSeq", sequenceName = "person_id_seq", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "PersonSeq")
+    @SequenceGenerator(name = "ContactSeq", sequenceName = "contact_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ContactSeq")
     private Long id;
+
+    @Column(name = "name")
+    private String name;
 
     @Column(name = "telephone")
     private String telephone;
@@ -22,10 +26,8 @@ public class Contact {
     @Column(name = "email")
     private String email;
 
+    @ManyToOne
     @JoinColumn(name = "person_id")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference
+    @JsonIgnore
     private Person person;
-
-
 }

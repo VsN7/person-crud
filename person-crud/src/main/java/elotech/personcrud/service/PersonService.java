@@ -6,6 +6,7 @@ import elotech.personcrud.model.Contact;
 import elotech.personcrud.model.Person;
 import elotech.personcrud.repository.PersonRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -14,10 +15,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 @Service
+@Transactional
 public class PersonService {
 
     @Autowired
@@ -25,24 +31,30 @@ public class PersonService {
 
     @Autowired
     private ContactService contactService;
+    @Autowired
+    private LegalIdentifierValidateService legalIdentifierValidateService;
 
     public PersonDTO save(PersonDTO payload) throws ObjectNotFoundException {
         this.payloadPersonValidate(payload);
-        this.thereIsPersonForLegalIdentifier(payload);
-        if(Objects.isNull(payload.getContactList()) && payload.getContactList().isEmpty()){
-            throw new ObjectNotFoundException("necessário informar pelo menos 1 contato");
-        }
+        payload.setLegalIdentifier(payload.getLegalIdentifier().replaceAll("[^0-9]", ""));
+        this.contactService.prepareSaveContact(payload, this.repository.getNextPersonId());
         Person person = repository.save(payload.toEntity());
-        return PersonDTO.toDTO(person);
+        payload.setId(person.getId());
+        return payload;
     }
 
     public void update(PersonDTO payload) throws ObjectNotFoundException {
-        this.payloadPersonValidate(payload);
+        this.dateBirthValidate(payload.getDateBirth());
+        this.contactValidate(payload.getContactList());
+        this.legalIdentifierValidate(payload.getLegalIdentifier());
+        this.thereIsPerson(payload.toEntity());
+        payload.setLegalIdentifier(payload.getLegalIdentifier().replaceAll("[^0-9]", ""));
         if(Objects.isNull(payload.getId())){
             throw new ObjectNotFoundException("necessário informar o id da pessoa");
         }
-        this.thereIsPersonForLegalIdentifier(payload);
-        repository.save(payload.toEntity());
+        List<Contact> contactsOld = this.contactService.findContactsByPerson(payload.toEntity());
+        this.contactService.updateOrAddOrRemoveContact(payload, contactsOld);
+        Person person = repository.save(payload.toEntity());
     }
 
     public void delete(PersonDTO payload) throws ObjectNotFoundException {
@@ -50,10 +62,19 @@ public class PersonService {
             throw new ObjectNotFoundException("necessário informar o id da pessoa");
         }
         this.thereIsPerson(payload.toEntity());
+        this.contactService.deleteByPerson(payload.toEntity());
         repository.delete(payload.toEntity());
     }
 
     private void payloadPersonValidate(PersonDTO payload) throws ObjectNotFoundException {
+        this.payloadRequiredFields(payload);
+        this.contactValidate(payload.getContactList());
+        this.dateBirthValidate(payload.getDateBirth());
+        this.legalIdentifierValidate(payload.getLegalIdentifier());
+        this.thereIsPersonForLegalIdentifier(payload);
+    }
+
+    private void payloadRequiredFields(PersonDTO payload){
         if(Objects.isNull(payload)){
             throw new ObjectNotFoundException("necessário informar uma pessoa");
         }
@@ -65,6 +86,24 @@ public class PersonService {
         }
         if(Objects.isNull(payload.getDateBirth())){
             throw new ObjectNotFoundException("data de nascimento é obrigatório");
+        }
+    }
+
+    private void legalIdentifierValidate(String legalIdentifier){
+        if (!this.legalIdentifierValidateService.valid(legalIdentifier.replaceAll("[^0-9]", ""))){
+            throw new ObjectNotFoundException("CPF invalido.");
+        }
+    }
+
+    private void contactValidate(List<Contact> contactList) {
+        if (Objects.isNull(contactList) || contactList.isEmpty()) {
+            throw new ObjectNotFoundException("A pessoa deve possuir ao menos um contato.");
+        }
+    }
+
+    private void dateBirthValidate(Date dateBirth) {
+        if (dateBirth.after(new Date())) {
+            throw new ObjectNotFoundException("A data de nascimento não pode ser uma data futura.");
         }
     }
 

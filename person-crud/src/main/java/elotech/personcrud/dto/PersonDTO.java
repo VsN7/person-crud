@@ -45,6 +45,7 @@ public class PersonDTO implements Serializable {
                 .name( person.getName() )
                 .legalIdentifier( person.getLegalIdentifier() )
                 .dateBirth(person.getDateBirth())
+                .contactList(person.getContactList())
                 .build();
     }
 

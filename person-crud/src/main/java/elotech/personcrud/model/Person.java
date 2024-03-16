@@ -1,12 +1,14 @@
 package elotech.personcrud.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -31,7 +33,6 @@ public class Person {
     @Column(name = "date_birth")
     private Date dateBirth;
 
-    @OneToMany(targetEntity = Contact.class, mappedBy = "person", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @Fetch(FetchMode.SELECT)
-    private List<Contact> contactList;
+    @OneToMany(mappedBy = "person")
+    private List<Contact> contactList = new ArrayList<>();
 }
