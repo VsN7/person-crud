@@ -40,25 +40,44 @@ public class PersonService {
     }
 
     public void update(PersonDTO payload) throws ObjectNotFoundException {
+        this.idValidate(payload.getId());
         this.dateBirthValidate(payload.getDateBirth());
         this.contactValidate(payload.getContactList());
         this.legalIdentifierValidate(payload.getLegalIdentifier());
         this.thereIsPerson(payload.toEntity());
         payload.setLegalIdentifier(payload.getLegalIdentifier().replaceAll("[^0-9]", ""));
-        if(Objects.isNull(payload.getId())){
-            throw new ObjectNotFoundException("necessário informar o id da pessoa");
-        }
         repository.save(payload.toEntity());
         this.contactService.updateOrAddOrRemoveContact(payload);
     }
 
     public void delete(PersonDTO payload) throws ObjectNotFoundException {
-        if(Objects.isNull(payload.getId())){
-            throw new ObjectNotFoundException("necessário informar o id da pessoa");
-        }
+        this.idValidate(payload.getId());
         this.thereIsPerson(payload.toEntity());
         this.contactService.deleteByPerson(payload.toEntity());
         repository.delete(payload.toEntity());
+    }
+
+    public PersonDTO getById(Long id) {
+        try {
+            return PersonDTO.toDTO(repository.getById(id));
+        } catch (EntityNotFoundException e) {
+            throw new ObjectNotFoundException("pessoa não encontrada");
+        }
+    }
+
+    public Page<Person> findAll(int page, int size, String sortBy) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
+            return repository.findAll(pageable);
+        } catch (EntityNotFoundException e) {
+            throw new ObjectNotFoundException("pessoa não encontrada");
+        }
+    }
+
+    private void idValidate(Long id){
+        if(Objects.isNull(id)){
+            throw new ObjectNotFoundException("necessário informar o id da pessoa");
+        }
     }
 
     private void payloadPersonValidate(PersonDTO payload) throws ObjectNotFoundException {
@@ -110,23 +129,6 @@ public class PersonService {
         Person person = repository.getByLegalIdentifier(personDTO.getLegalIdentifier());
         if(Objects.nonNull(person)) {
             throw new ObjectNotFoundException("CPF: " + person.getLegalIdentifier() + " Já cadastrado na base");
-        }
-    }
-
-    public PersonDTO getById(Long id) {
-        try {
-            return PersonDTO.toDTO(repository.getById(id));
-        } catch (EntityNotFoundException e) {
-            throw new ObjectNotFoundException("pessoa não encontrada");
-        }
-    }
-
-    public Page<Person> findAll(int page, int size, String sortBy) {
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
-            return repository.findAll(pageable);
-        } catch (EntityNotFoundException e) {
-            throw new ObjectNotFoundException("pessoa não encontrada");
         }
     }
 

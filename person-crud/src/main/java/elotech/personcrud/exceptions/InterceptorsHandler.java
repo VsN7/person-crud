@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 @RestControllerAdvice
-public class InterceptorHandler extends ResponseEntityExceptionHandler {
+public class InterceptorsHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(value = ObjectNotFoundException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
