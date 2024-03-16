@@ -9,18 +9,14 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -37,8 +33,8 @@ public class PersonService {
     public PersonDTO save(PersonDTO payload) throws ObjectNotFoundException {
         this.payloadPersonValidate(payload);
         payload.setLegalIdentifier(payload.getLegalIdentifier().replaceAll("[^0-9]", ""));
-        this.contactService.prepareSaveContact(payload, this.repository.getNextPersonId());
         Person person = repository.save(payload.toEntity());
+        this.contactService.prepareSaveContact(payload, person);
         payload.setId(person.getId());
         return payload;
     }
@@ -52,9 +48,8 @@ public class PersonService {
         if(Objects.isNull(payload.getId())){
             throw new ObjectNotFoundException("necessário informar o id da pessoa");
         }
-        List<Contact> contactsOld = this.contactService.findContactsByPerson(payload.toEntity());
-        this.contactService.updateOrAddOrRemoveContact(payload, contactsOld);
-        Person person = repository.save(payload.toEntity());
+        repository.save(payload.toEntity());
+        this.contactService.updateOrAddOrRemoveContact(payload);
     }
 
     public void delete(PersonDTO payload) throws ObjectNotFoundException {

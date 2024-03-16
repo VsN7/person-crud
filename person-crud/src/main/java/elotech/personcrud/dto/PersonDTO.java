@@ -10,7 +10,6 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -47,17 +46,5 @@ public class PersonDTO implements Serializable {
                 .dateBirth(person.getDateBirth())
                 .contactList(person.getContactList())
                 .build();
-    }
-
-    public static List<PersonDTO> toDTOList(List<Person> personList ) {
-
-        if( personList == null ) {
-            return null;
-        }
-
-        return personList.stream()
-                .map( PersonDTO::toDTO )
-                .collect( Collectors.toList() );
-
     }
 }

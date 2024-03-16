@@ -22,19 +22,19 @@ public class ContactService {
     @Autowired
     private ContactRepository repository;
 
-    public void prepareSaveContact(PersonDTO payload, Long nextId){
+    public void prepareSaveContact(PersonDTO payload, Person person){
         for (Contact contact: payload.getContactList()){
             this.payloadContactValidate(contact);
-            Person person = new Person();
-            person.setId(nextId);
             contact.setPerson(person);
+            this.repository.save(contact);
         }
     }
 
-    public void updateOrAddOrRemoveContact(PersonDTO payload, List<Contact> contactsOld){
+    public void updateOrAddOrRemoveContact(PersonDTO payload){
         this.updateAll(payload.getContactList());
-        this.saveAllContract(payload, contactsOld);
+        List<Contact> contactsOld = this.repository.findByPerson(payload.toEntity());
         this.removeAllContract(payload.getContactList(), contactsOld);
+        this.saveAllContract(payload, contactsOld);
     }
 
     public void deleteByPerson(Person person){
@@ -47,10 +47,6 @@ public class ContactService {
         } catch (EntityNotFoundException e) {
             throw new ObjectNotFoundException("contato não encontrado");
         }
-    }
-
-    public List<Contact> findContactsByPerson(Person person){
-        return this.repository.findByPerson(person);
     }
 
     private void updateAll(List<Contact> contactList){
